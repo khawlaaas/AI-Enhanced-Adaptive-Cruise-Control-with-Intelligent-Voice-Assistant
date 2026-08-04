@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adaptive Cruise Control — Perception &amp; Voice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1D365A;
+    --navy-deep:#0F1F38;
+    --blue:#0070AD;
+    --cyan:#12ABDB;
+    --ice:#F4F7FB;
+    --mist:#E4EAF2;
+    --white:#FFFFFF;
+    --ink:#122036;
+    --slate:#647089;
+    --success:#1E8E5A;
+    --success-bg:#E7F5EE;
+    --warning:#B9791A;
+    --warning-bg:#FCF1DE;
+    --danger:#C0392B;
+    --danger-bg:#FBE9E7;
+    --radius:16px;
+    --shadow: 0 1px 2px rgba(15,31,56,.05), 0 10px 28px rgba(15,31,56,.07);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ice);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  ::selection{background:var(--cyan);color:var(--white);}
+
+  header.app-header{
+    background:linear-gradient(120deg,var(--navy-deep) 0%,var(--navy) 65%,var(--blue) 140%);
+    color:var(--white);
+    padding:20px 28px 0 28px;
+    position:sticky; top:0; z-index:50;
+    box-shadow:0 2px 18px rgba(0,0,0,.18);
+  }
+  .header-top{
+    display:flex; align-items:center; justify-content:space-between;
+    max-width:1080px; margin:0 auto; gap:16px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{
+    width:40px;height:40px;border-radius:11px;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--white);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.25);
+    flex-shrink:0;
+  }
+  .brand-text .title{font-size:16.5px; font-weight:600; letter-spacing:.2px;}
+  .brand-text .subtitle{font-size:12px; color:#B9CEE6; margin-top:1px;}
+  .header-meta{font-size:12px; color:#A9C2DE; text-align:right; line-height:1.5;}
+  .header-meta b{color:#EAF4FC; font-weight:600;}
+
+  nav.tabs{
+    max-width:1080px; margin:16px auto 0 auto;
+    display:flex; gap:4px;
+  }
+  nav.tabs button{
+    appearance:none; border:none; background:transparent; cursor:pointer;
+    color:#AEC6E2; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14.5px;
+    padding:11px 20px 13px 20px; border-radius:10px 10px 0 0;
+    transition:color .15s ease, background .15s ease;
+  }
+  nav.tabs button:hover{ color:#EAF4FC; background:rgba(255,255,255,.06); }
+  nav.tabs button.active{ color:var(--navy-deep); background:var(--ice); }
+
+  main{ max-width:1080px; margin:0 auto; padding:32px 28px 70px 28px; }
+  .tab-panel{ display:none; animation:fade .25s ease; }
+  .tab-panel.active{ display:block; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .card{ background:var(--white); border:1px solid var(--mist); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; }
+  .btn{ appearance:none; border:none; cursor:pointer; border-radius:10px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; padding:11px 18px; transition:transform .1s ease, box-shadow .15s ease, background .15s ease; }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:linear-gradient(135deg,var(--blue),var(--cyan)); color:var(--white); box-shadow:0 4px 14px rgba(0,112,173,.32);}
+  .btn-primary:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
+  .btn-ghost{ background:var(--white); color:var(--navy); border:1px solid var(--mist); }
+  .btn-ghost:hover{ border-color:var(--blue); color:var(--blue); }
+  .btn-ghost.active{ background:var(--navy); color:var(--white); border-color:var(--navy); }
+  .btn-sm{ padding:7px 12px; font-size:12.5px; border-radius:8px; }
+
+  .caption{ font-size:12px; color:var(--slate); line-height:1.55; }
+  .caption b{ color:var(--navy); }
+
+  .section-title{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:0 0 16px 0;}
+  .section-title h2{ font-size:19px; margin:0; color:var(--navy-deep);}
+
+  /* ---------- Perception tab ---------- */
+  .perc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;}
+  .drop-zone{ border:2px dashed var(--mist); border-radius:var(--radius); padding:36px 20px; text-align:center; background:var(--white); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+  .drop-zone:hover, .drop-zone.dragover{ border-color:var(--cyan); background:#F2FBFE; }
+  .drop-zone .ic{ font-size:28px; margin-bottom:8px;}
+  .drop-zone .t1{ font-weight:600; font-size:14.5px;}
+  .drop-zone .t2{ font-size:12.5px; color:var(--slate); margin-top:4px;}
+  #fileInput{ display:none; }
+
+  .preview-wrap{ position:relative; border-radius:12px; overflow:hidden; background:#0b1626; }
+  #overlayCanvas{ display:block; width:100%; height:auto; }
+  .scan-status{ margin-top:14px; }
+  .scan-row{ display:flex; align-items:center; gap:10px; font-size:12.5px; padding:5px 0; color:var(--slate);}
+  .scan-row .chk{ width:15px; height:15px; border-radius:50%; border:2px solid var(--mist); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--white); transition:.15s;}
+  .scan-row.done .chk{ background:var(--success); border-color:var(--success);}
+  .scan-row.active{ color:var(--navy); font-weight:600;}
+
+  .conf-list{ display:flex; flex-direction:column; gap:9px; margin-top:16px;}
+  .conf-row{ display:grid; grid-template-columns:150px 1fr 40px; align-items:center; gap:10px; font-size:12px;}
+  .conf-row .lbl{ color:var(--slate); }
+  .conf-track{ height:7px; border-radius:100px; background:var(--mist); overflow:hidden; }
+  .conf-fill{ height:100%; border-radius:100px; background:linear-gradient(90deg,var(--blue),var(--cyan)); width:0%; transition:width .5s ease; }
+  .conf-pct{ font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--navy); text-align:right;}
+
+  .result-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px;}
+  .result-card{ border:1px solid var(--mist); border-radius:10px; padding:10px 13px;}
+  .result-card .lbl{ font-size:10.5px; color:var(--slate); text-transform:uppercase; letter-spacing:.5px;}
+  .result-card .val{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px; margin-top:3px;}
+  .badge{ display:inline-block; padding:2px 8px; border-radius:100px; font-size:11px; font-weight:700;}
+  .badge.ok{ background:var(--success-bg); color:var(--success);}
+  .badge.warn{ background:var(--warning-bg); color:var(--warning);}
+  .badge.bad{ background:var(--danger-bg); color:var(--danger);}
+
+  .decision-card{ margin-top:16px; border-radius:14px; padding:18px 20px; color:var(--white); position:relative; overflow:hidden; display:flex; align-items:center; gap:18px;}
+  .decision-card.clear{ background:linear-gradient(135deg,#1c6e4a,#2a9d6f);}
+  .decision-card.suggest{ background:linear-gradient(135deg,#a06a13,#c98d24);}
+  .decision-card.stop{ background:linear-gradient(135deg,#8f2c1f,#c0392b);}
+  .decision-card .gaugewrap{ flex-shrink:0; }
+  .decision-card .reason{ font-size:13px; opacity:.92; margin-bottom:2px;}
+  .decision-card .math{ margin-top:8px; font-size:11px; font-family:'JetBrains Mono',monospace; opacity:.8;}
+
+  /* ---------- Voice tab ---------- */
+  .voice-top-row{ display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+  .chip-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .voice-grid{ display:grid; grid-template-columns:1fr 300px; gap:24px; align-items:start;}
+
+  .mic-stage{ text-align:center; padding:8px 0 6px 0; }
+  .mic-big{ width:104px; height:104px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--blue),var(--cyan)); color:#fff; font-size:34px;
+    box-shadow:0 8px 26px rgba(0,112,173,.35); display:inline-flex; align-items:center; justify-content:center;
+    transition:transform .12s ease, box-shadow .2s ease; position:relative; }
+  .mic-big:active{ transform:scale(.96); }
+  .mic-big.listening{ background:linear-gradient(135deg,#c0392b,#e0574a); animation:pulse 1.2s infinite; }
+  .mic-big.speaking{ background:linear-gradient(135deg,#1c6e4a,#2a9d6f); }
+  .mic-big:disabled{ opacity:.4; cursor:not-allowed; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(192,57,43,.45);} 70%{box-shadow:0 0 0 16px rgba(192,57,43,0);} 100%{box-shadow:0 0 0 0 rgba(192,57,43,0);} }
+  .mic-hint{ font-size:12.5px; color:var(--slate); margin-top:12px; min-height:18px; }
+  .mic-lang{ display:flex; justify-content:center; gap:6px; margin-top:14px; }
+
+  .transcript{ margin-top:20px; border-top:1px solid var(--mist); padding-top:16px; display:flex; flex-direction:column; gap:10px; max-height:260px; overflow-y:auto; }
+  .msg{ max-width:82%; padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.5;}
+  .msg.user{ align-self:flex-end; background:var(--blue); color:var(--white); border-bottom-right-radius:4px;}
+  .msg.assistant{ align-self:flex-start; background:var(--ice); border:1px solid var(--mist); color:var(--ink); border-bottom-left-radius:4px;}
+  .msg.system{ align-self:center; background:transparent; color:var(--slate); font-size:11.5px; font-style:italic;}
+  .confirm-banner{ background:var(--warning-bg); border:1px solid #f0dcb0; color:var(--warning); border-radius:10px; padding:10px 14px; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px;}
+  .confirm-banner .actions{ display:flex; gap:6px; flex-shrink:0;}
+  .composer{ display:flex; gap:8px; margin-top:14px;}
+  .composer input[type=text]{ flex:1; padding:11px 13px; border-radius:10px; border:1px solid var(--mist); font-family:'Inter',sans-serif; font-size:13.5px;}
+  .composer input[type=text]:focus{ outline:none; border-color:var(--cyan); box-shadow:0 0 0 3px rgba(18,171,219,.15);}
+  .scenario-row{ display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+
+  .dash-card{ background:var(--navy-deep); border-radius:14px; padding:20px; color:var(--white);}
+  .gauge{ width:130px; height:130px; border-radius:50%; margin:0 auto 12px auto; position:relative; background:conic-gradient(var(--cyan) calc(var(--pct)*1%), rgba(255,255,255,.12) 0);}
+  .gauge::before{ content:''; position:absolute; inset:12px; border-radius:50%; background:var(--navy-deep);}
+  .gauge-val{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .gauge-val .n{ font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700;}
+  .gauge-val .u{ font-size:10.5px; color:#9FC1E0; margin-top:-2px;}
+  .dash-row{ display:flex; justify-content:space-between; align-items:center; font-size:12.5px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.1);}
+  .dash-row:last-child{ border-bottom:none;}
+  .dash-row .lbl{ color:#9FC1E0;}
+  .dash-row .val{ font-family:'JetBrains Mono',monospace; font-weight:600;}
+  .toggle-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px;}
+  .toggle-dot.on{ background:#3ED598;}
+  .toggle-dot.off{ background:#5F80A3;}
+  .sd-bar{ display:flex; gap:3px;}
+  .sd-bar span{ width:10px; height:8px; border-radius:2px; background:rgba(255,255,255,.15);}
+  .sd-bar span.on{ background:var(--cyan);}
+
+  footer{ text-align:center; padding:26px 20px 46px 20px; font-size:11.5px; color:var(--slate);}
+
+  @media (max-width:820px){
+    .perc-grid, .voice-grid{ grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-mark">AI</div>
+      <div class="brand-text">
+        <div class="title">Adaptive Cruise Control</div>
+        <div class="subtitle">Perception &amp; multilingual voice intelligence</div>
+      </div>
+    </div>
+    <div class="header-meta">Prepared for supervisor review · <b>Khawla</b> — ENSAM Casablanca</div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="perception">Perception Pipeline</button>
+    <button class="tab-btn" data-tab="voice">Voice Assistant</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ================= TAB: PERCEPTION ================= -->
+  <section class="tab-panel active" id="tab-perception">
+    <div class="section-title">
+      <h2>Run the perception pipeline</h2>
+    </div>
+    <div class="perc-grid">
+      <div>
+        <div class="drop-zone" id="dropZone">
+          <div class="ic">📷</div>
+          <div class="t1">Drop a road image, or click to browse</div>
+          <div class="t2">JPG or PNG</div>
+          <input type="file" id="fileInput" accept="image/*">
+        </div>
+        <div class="preview-wrap" id="previewWrap" style="display:none; margin-top:16px;">
+          <canvas id="overlayCanvas"></canvas>
+        </div>
+        <div class="scan-status" id="scanStatus"></div>
+        <p class="caption" style="margin-top:14px;">This preview stands in for the eight trained models (Keras CNN, Roboflow, YOLOv11, custom YOLO, TFLite) with deterministic image-feature analysis, since the trained weights aren't hosted for a static file. <b>The decision engine — priority order, speed math, thresholds — is the exact logic from the notebook.</b> Point this at your Roboflow endpoints + a small model server to swap in live predictions.</p>
+      </div>
+      <div>
+        <div id="resultsPanel" style="display:none;">
+          <div class="conf-list" id="confList"></div>
+          <div class="result-grid" id="resultGrid"></div>
+          <div class="decision-card clear" id="decisionCard">
+            <div class="gaugewrap"><svg id="speedGauge" width="88" height="88" viewBox="0 0 88 88"></svg></div>
+            <div style="flex:1;">
+              <div class="reason" id="d-reason">Cruising</div>
+              <div class="math" id="d-math"></div>
+            </div>
+          </div>
+        </div>
+        <div id="emptyState" class="card" style="text-align:center; color:var(--slate); font-size:13.5px;">
+          Upload an image to see the full perception breakdown and the final speed decision.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB: VOICE ================= -->
+  <section class="tab-panel" id="tab-voice">
+    <div class="voice-top-row">
+      <div class="section-title" style="margin:0;"><h2>Talk to the assistant</h2></div>
+      <div class="chip-row" id="personalityRow"></div>
+    </div>
+
+    <div class="voice-grid">
+      <div>
+        <div class="card">
+          <div class="mic-stage">
+            <button class="mic-big" id="micBtn" title="Press and speak">🎙</button>
+            <div class="mic-hint" id="micHint">Press the mic and speak a command — in the language selected below.</div>
+            <div class="mic-lang" id="micLangRow"></div>
+          </div>
+
+          <div class="transcript" id="chatWindow"></div>
+          <div id="confirmBanner" style="display:none;"></div>
+          <div class="composer">
+            <input type="text" id="chatInput" placeholder="…or type instead, e.g. “set cruise speed to 100”">
+            <button class="btn btn-primary" id="sendBtn">Send</button>
+          </div>
+          <div class="scenario-row" id="scenarioRow"></div>
+          <p class="caption" style="margin-top:14px;">Runs fully offline — the same tool-calling / propose→confirm architecture used with Whisper + Llama-3.3-70B (Groq) + ElevenLabs in the notebook, kept local here so this works instantly for anyone you send it to.</p>
+        </div>
+      </div>
+      <div>
+        <div class="dash-card">
+          <div style="text-align:center; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#8FB6D9; margin-bottom:10px;">Vehicle state</div>
+          <div class="gauge" id="gauge" style="--pct:31">
+            <div class="gauge-val"><div class="n" id="g-speed">50</div><div class="u">km/h cruise</div></div>
+          </div>
+          <div class="dash-row"><span class="lbl">Speed limit set</span><span class="val" id="v-limit">—</span></div>
+          <div class="dash-row"><span class="lbl">Eco mode</span><span class="val" id="v-eco"><span class="toggle-dot off"></span>off</span></div>
+          <div class="dash-row"><span class="lbl">Window</span><span class="val" id="v-window"><span class="toggle-dot on"></span>open</span></div>
+          <div class="dash-row"><span class="lbl">Safety distance</span><span class="val"><span class="sd-bar" id="v-safety"></span></span></div>
+          <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:12px; color:#9FC1E0;">Spoken replies</span>
+            <button class="btn btn-ghost btn-sm" id="ttsToggle">🔊 on</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Built for internal review — adaptive cruise control project · Khawla, ENSAM Casablanca</footer>
+
+<script>
+(function(){
+
+  /* ============================================================
+     TAB NAVIGATION
+  ============================================================ */
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ============================================================
+     DECISION ENGINE — ported 1:1 from the notebook
+  ============================================================ */
+  const BASE_SPEED_BY_ROAD_TYPE = { autoroute: 120, urbaine: 60, rurale: 100, "off-road": 50 };
+  const DAMAGE_SPEED_REDUCTION = 0.30;
+  const CROSSWALK_SPEED_CAP = 30;
+  const SPEED_BUMP_SPEED_CAP = 30;
+  const SAFETY_DISTANCE_SPEED_REDUCTION = 0.20;
+  const WEATHER_SPEED_REDUCTION = 0.20;
+  const PEDESTRIAN_FAR_SPEED_REDUCTION = 0.30;
+  const AUTOMATIC_REASON_CODES = new Set(["pedestrian_stop", "stop_sign", "red_light"]);
+
+  function round1(x){ return Math.round(x*10)/10; }
+
+  function getBaseSpeed(roadType, isDamaged){
+    let speed = BASE_SPEED_BY_ROAD_TYPE[roadType];
+    if (isDamaged) speed = speed * (1 - DAMAGE_SPEED_REDUCTION);
+    return round1(speed);
+  }
+
+  function applyOverrides(currentSpeed, detectedSigns, o){
+    if (o.pedestrianClose) return { finalSpeed:0, reasonCode:"pedestrian_stop" };
+    for (const sign of detectedSigns){
+      if (sign.class === "Stop") return { finalSpeed:0, reasonCode:"stop_sign" };
+      if (sign.class === "Red Light") return { finalSpeed:0, reasonCode:"red_light" };
+    }
+    let finalSpeed = currentSpeed, reasonCode = null;
+    if (o.crosswalkAhead && CROSSWALK_SPEED_CAP < finalSpeed){ finalSpeed = CROSSWALK_SPEED_CAP; reasonCode = "crosswalk"; }
+    if (o.bumpAhead && SPEED_BUMP_SPEED_CAP < finalSpeed){ finalSpeed = SPEED_BUMP_SPEED_CAP; reasonCode = "speed_bump"; }
+    for (const sign of detectedSigns){
+      const m = /Speed Limit (\d+)/.exec(sign.class);
+      if (m){ const posted = parseInt(m[1],10); if (posted < finalSpeed){ finalSpeed = posted; reasonCode = "speed_limit"; } }
+    }
+    if (o.pedestrianFar){ finalSpeed = round1(finalSpeed * (1 - PEDESTRIAN_FAR_SPEED_REDUCTION)); reasonCode = "pedestrian_far"; }
+    if (o.carTooClose){ finalSpeed = round1(finalSpeed * (1 - SAFETY_DISTANCE_SPEED_REDUCTION)); reasonCode = "safety_distance"; }
+    if (o.weatherCondition === "adverse"){ finalSpeed = round1(finalSpeed * (1 - WEATHER_SPEED_REDUCTION)); reasonCode = "weather"; }
+    return { finalSpeed, reasonCode };
+  }
+
+  const REASON_TEXT = {
+    pedestrian_stop: "Pedestrian detected close ahead — immediate stop.",
+    stop_sign: "Stop sign detected — immediate stop.",
+    red_light: "Red light detected — immediate stop.",
+    crosswalk: "Crosswalk ahead — speed capped.",
+    speed_bump: "Speed bump ahead — speed capped.",
+    speed_limit: "Posted speed limit applied.",
+    pedestrian_far: "Pedestrian spotted at a distance — easing off.",
+    safety_distance: "Vehicle ahead is close — easing off.",
+    weather: "Adverse weather — easing off.",
+    null: "Clear road — cruising at the road-type base speed."
+  };
+
+  /* ============================================================
+     PERCEPTION TAB
+  ============================================================ */
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewWrap = document.getElementById('previewWrap');
+  const canvas = document.getElementById('overlayCanvas');
+  const ctx = canvas.getContext('2d');
+  const scanStatus = document.getElementById('scanStatus');
+  const resultsPanel = document.getElementById('resultsPanel');
+  const emptyState = document.getElementById('emptyState');
+
+  dropZone.addEventListener('click', ()=>fileInput.click());
+  dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e=>{
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{ if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+  function seededRandom(seed){
+    let t = seed + 0x6D2B79F5;
+    return function(){
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function hashSeed(s){ let h = 0; for (let i=0;i<s.length;i++){ h = (Math.imul(31,h) + s.charCodeAt(i)) | 0; } return h >>> 0; }
+
+  function handleFile(file){
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      previewWrap.style.display = 'block';
+      const maxW = 640;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const rng = seededRandom(hashSeed(file.name + file.size + '-' + file.lastModified));
+
+      const sample = document.createElement('canvas');
+      sample.width = 48; sample.height = 48;
+      const sctx = sample.getContext('2d');
+      sctx.drawImage(img, 0, 0, 48, 48);
+      const data = sctx.getImageData(0,0,48,48).data;
+      let r=0,g=0,b=0,n=0;
+      for (let i=0;i<data.length;i+=4){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; n++; }
+      r/=n; g/=n; b/=n;
+      const brightness = (r+g+b)/3;
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      const sat = max === 0 ? 0 : (max-min)/max;
+      const greenRatio = g / (r+g+b+1);
+      const grayness = 1 - sat;
+
+      let p = { detectedSigns: [] };
+
+      let roadType, roadConf;
+      const offroadRoll = rng();
+      if (greenRatio > 0.36 && brightness > 60){ roadType = 'rurale'; roadConf = 0.7 + rng()*0.25; }
+      else if (grayness > 0.55 && brightness > 90){ roadType = 'urbaine'; roadConf = 0.72 + rng()*0.24; }
+      else if (offroadRoll < 0.14 && sat < 0.28){ roadType = 'off-road'; roadConf = 0.6 + rng()*0.3; }
+      else { roadType = 'autoroute'; roadConf = 0.68 + rng()*0.27; }
+      p.roadType = roadType; p.roadConf = roadConf;
+
+      const adverseScore = Math.max(0, Math.min(1, (150 - brightness)/150 * 0.6 + (1-sat) * 0.4 + (rng()-0.5)*0.25));
+      p.weatherCondition = adverseScore > 0.70 ? 'adverse' : 'clear';
+      p.weatherConf = adverseScore > 0.70 ? adverseScore : (1-adverseScore);
+
+      p.isDamaged = rng() < 0.22;
+      p.damageConf = p.isDamaged ? 0.55 + rng()*0.4 : 0.15 + rng()*0.2;
+
+      const signPool = ['Stop','Red Light','Speed Limit 40','Speed Limit 60','Speed Limit 90','Speed Limit 120','Yield'];
+      const signCount = rng() < 0.55 ? (rng() < 0.75 ? 1 : 2) : 0;
+      const usedSigns = new Set();
+      let signConf = 0;
+      for (let i=0;i<signCount;i++){
+        let s = signPool[Math.floor(rng()*signPool.length)];
+        if (usedSigns.has(s)) continue;
+        usedSigns.add(s);
+        const c = 0.6 + rng()*0.38;
+        signConf = Math.max(signConf, c);
+        p.detectedSigns.push({ class: s, confidence: c, box: [0.06 + rng()*0.6, 0.06 + rng()*0.12, 0.1, 0.14] });
+      }
+      p.signConf = signConf;
+
+      p.bumpAhead = rng() < 0.20;
+      p.bumpConf = p.bumpAhead ? 0.6 + rng()*0.35 : 0.1 + rng()*0.2;
+
+      const pedRoll = rng();
+      p.pedestrianClose = pedRoll < 0.09;
+      p.pedestrianFar = !p.pedestrianClose && pedRoll < 0.24;
+      p.pedConf = (p.pedestrianClose || p.pedestrianFar) ? 0.65 + rng()*0.3 : 0.1 + rng()*0.2;
+      p.crosswalkAhead = rng() < 0.26;
+
+      p.carTooClose = rng() < 0.22;
+      p.vehicleConf = p.carTooClose ? 0.6 + rng()*0.35 : 0.2 + rng()*0.3;
+
+      renderScanSequence(p);
+    };
+    img.src = url;
+  }
+
+  const SCAN_STEPS = [
+    { name:'Road-type classifier', key:'roadConf' },
+    { name:'Off-road / surface model', key:null },
+    { name:'Damage detector', key:'damageConf' },
+    { name:'Traffic sign detector', key:'signConf' },
+    { name:'Speed bump detector', key:'bumpConf' },
+    { name:'Pedestrian & crosswalk detector', key:'pedConf' },
+    { name:'Weather classifier', key:'weatherConf' },
+    { name:'Vehicle distance detector', key:'vehicleConf' },
+  ];
+
+  function renderScanSequence(p){
+    resultsPanel.style.display = 'none';
+    emptyState.style.display = 'none';
+    scanStatus.innerHTML = SCAN_STEPS.map((s,i)=>`<div class="scan-row" id="scan-${i}"><span class="chk"></span>${s.name}</div>`).join('');
+    let i = 0;
+    const interval = setInterval(()=>{
+      const prev = document.getElementById('scan-'+(i-1));
+      if (prev) prev.classList.remove('active');
+      if (i >= SCAN_STEPS.length){
+        clearInterval(interval);
+        drawOverlay(p);
+        showResults(p);
+        return;
+      }
+      const row = document.getElementById('scan-'+i);
+      row.classList.add('active');
+      setTimeout(()=>{ row.classList.add('done'); row.classList.remove('active'); }, 150);
+      i++;
+    }, 190);
+  }
+
+  function drawOverlay(p){
+    const W = canvas.width, H = canvas.height;
+    function box(rx,ry,rw,rh,color,label){
+      const x=rx*W, y=ry*H, w=rw*W, h=rh*H;
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.strokeRect(x,y,w,h);
+      ctx.font = '600 12px Inter, sans-serif';
+      const tw = ctx.measureText(label).width + 10;
+      ctx.fillStyle = color; ctx.fillRect(x, Math.max(0,y-18), tw, 18);
+      ctx.fillStyle = '#fff'; ctx.fillText(label, x+5, Math.max(12,y-5));
+    }
+    p.detectedSigns.forEach(s=> box(s.box[0], s.box[1], s.box[2], s.box[3], '#12ABDB', s.class));
+    if (p.bumpAhead) box(0.30, 0.68, 0.4, 0.14, '#8E5AC8', 'Speed-Bump');
+    if (p.crosswalkAhead) box(0.15, 0.74, 0.7, 0.16, '#B9791A', 'Crosswalk');
+    if (p.pedestrianClose) box(0.44, 0.42, 0.12, 0.34, '#C0392B', 'Pedestrian · close');
+    else if (p.pedestrianFar) box(0.72, 0.36, 0.07, 0.2, '#C0392B', 'Pedestrian · far');
+    if (p.carTooClose) box(0.36, 0.5, 0.28, 0.26, '#0070AD', 'Vehicle · close');
+    if (p.isDamaged) box(0.05, 0.8, 0.3, 0.12, '#B9791A', 'Road damage');
+  }
+
+  function svgGauge(pct, color){
+    const r = 36, c = 2*Math.PI*r, off = c*(1-pct);
+    return `<circle cx="44" cy="44" r="${r}" fill="none" stroke="#E4EAF2" stroke-width="9"/>
+      <circle cx="44" cy="44" r="${r}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
+        stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 44 44)"/>`;
+  }
+
+  function showResults(p){
+    resultsPanel.style.display = 'block';
+
+    const confRows = [
+      ['Road type', p.roadType, p.roadConf],
+      ['Weather', p.weatherCondition, p.weatherConf],
+      ['Road damage', p.isDamaged ? 'damaged' : 'intact', p.damageConf],
+      ['Traffic signs', p.detectedSigns.length ? p.detectedSigns.length+' found' : 'none', p.signConf],
+      ['Speed bump', p.bumpAhead ? 'detected' : 'none', p.bumpConf],
+      ['Pedestrian', p.pedestrianClose ? 'close' : (p.pedestrianFar ? 'far' : 'none'), p.pedConf],
+      ['Vehicle ahead', p.carTooClose ? 'too close' : 'clear', p.vehicleConf],
+    ];
+    document.getElementById('confList').innerHTML = confRows.map(([lbl,val,conf])=>{
+      const pct = Math.round(conf*100);
+      return `<div class="conf-row"><span class="lbl">${lbl}</span>
+        <div class="conf-track"><div class="conf-fill" style="width:${pct}%"></div></div>
+        <span class="conf-pct">${pct}%</span></div>`;
+    }).join('');
+
+    let pedTxt = 'none';
+    if (p.pedestrianClose) pedTxt = '<span class="badge bad">pedestrian close</span>';
+    else if (p.pedestrianFar) pedTxt = '<span class="badge warn">pedestrian far</span>';
+    if (p.crosswalkAhead) pedTxt += (pedTxt==='none'?'':' · ') + '<span class="badge warn">crosswalk</span>';
+
+    document.getElementById('resultGrid').innerHTML = `
+      <div class="result-card"><div class="lbl">Road type</div><div class="val">${p.roadType}</div></div>
+      <div class="result-card"><div class="lbl">Weather</div><div class="val">${p.weatherCondition==='adverse' ? '<span class="badge warn">adverse</span>' : '<span class="badge ok">clear</span>'}</div></div>
+      <div class="result-card"><div class="lbl">Road damage</div><div class="val">${p.isDamaged ? '<span class="badge bad">damaged</span>' : '<span class="badge ok">intact</span>'}</div></div>
+      <div class="result-card"><div class="lbl">Vehicle ahead</div><div class="val">${p.carTooClose ? '<span class="badge warn">too close</span>' : '<span class="badge ok">clear</span>'}</div></div>
+      <div class="result-card" style="grid-column:1/-1;"><div class="lbl">Pedestrian / crosswalk</div><div class="val">${pedTxt}</div></div>
+      <div class="result-card" style="grid-column:1/-1;"><div class="lbl">Traffic signs detected</div><div class="val">${p.detectedSigns.length ? p.detectedSigns.map(s=>s.class).join(', ') : 'none'}</div></div>
+    `;
+
+    const baseSpeed = getBaseSpeed(p.roadType, p.isDamaged);
+    const { finalSpeed, reasonCode } = applyOverrides(baseSpeed, p.detectedSigns, {
+      pedestrianClose: p.pedestrianClose, pedestrianFar: p.pedestrianFar,
+      crosswalkAhead: p.crosswalkAhead, bumpAhead: p.bumpAhead,
+      carTooClose: p.carTooClose, weatherCondition: p.weatherCondition,
+    });
+
+    const card = document.getElementById('decisionCard');
+    card.classList.remove('clear','suggest','stop');
+    const kind = AUTOMATIC_REASON_CODES.has(reasonCode) ? 'stop' : (reasonCode ? 'suggest' : 'clear');
+    card.classList.add(kind);
+    document.getElementById('d-reason').textContent = REASON_TEXT[reasonCode] || REASON_TEXT['null'];
+    document.getElementById('d-math').textContent =
+      `base_speed(${p.roadType}${p.isDamaged?', damaged ×0.70':''}) = ${baseSpeed} km/h → reason_code: ${reasonCode || 'null'} → final_speed_kmh = ${finalSpeed}`;
+    document.getElementById('speedGauge').innerHTML = svgGauge(Math.min(1, finalSpeed/130), '#ffffff') +
+      `<text x="44" y="40" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="20" fill="#fff">${finalSpeed}</text>
+       <text x="44" y="55" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#ffffffcc">km/h</text>`;
+  }
+
+  /* ============================================================
+     VOICE ASSISTANT — offline multilingual intent engine
+     Same propose→confirm architecture & tool schema as the notebook's
+     Whisper + Groq/Llama-3.3-70B pipeline, run locally so it never
+     depends on a network call or a hidden API key.
+  ============================================================ */
+  const PERSONALITIES = {
+    professional: { label:'Professional' },
+    friendly: { label:'Friendly' },
+    sport: { label:'Sport' },
+    zen: { label:'Zen' },
+  };
+  let currentPersonality = 'professional';
+
+  const LANGS = { en:'English', fr:'Français', de:'Deutsch' };
+  let currentLang = 'en';
+
+  let vehicleState = { cruise_speed_kmh:50, speed_limit_kmh:null, eco_mode:false, safety_distance_level:2, window_open:true };
+  let pendingCommand = null;
+
+  const T = {
+    en: {
+      greet: { professional:"Good day. How can I assist you?", friendly:"Hey there! What can I do for you?", sport:"Yo! Ready when you are — what's up?", zen:"Hello. Take your time — how can I help?" },
+      whoami: { professional:"I'm your onboard driving assistant, here to help manage the car.", friendly:"I'm your car's little co-pilot — happy to help!", sport:"Your onboard co-driver, ready to roll!", zen:"I'm your calm companion on this drive." },
+      unknown: "I didn't catch a command there — try something like “set cruise speed to 100”.",
+      confirmQ: (a)=>`Do you want me to ${a}?`,
+      yes: "Done — applying that now.",
+      no: "Okay, no changes made.",
+      noPending: "There's no pending command to confirm.",
+      actions: {
+        close_window:"close the window", open_window:"open the window",
+        set_speed_limit:(v)=>`set the speed limit to ${v} km/h`, set_cruise_speed:(v)=>`set cruise speed to ${v} km/h`,
+        enable_eco_mode:"enable eco mode", increase_safety_distance:"increase the safety distance",
+        decrease_safety_distance:"decrease the safety distance", decrease_speed:"slow down by 10 km/h",
+        increase_speed:"speed up by 10 km/h",
+      },
+    },
+    fr: {
+      greet: { professional:"Bonjour. Comment puis-je vous aider ?", friendly:"Salut ! Je peux faire quoi pour toi ?", sport:"Yo, prêt quand tu veux — ça va ?", zen:"Bonjour. Prenez votre temps — comment puis-je aider ?" },
+      whoami: { professional:"Je suis votre assistant de conduite embarqué.", friendly:"Je suis le petit copilote de ta voiture !", sport:"Ton copilote embarqué, prêt à rouler !", zen:"Je suis votre compagnon de route." },
+      unknown: "Je n'ai pas compris de commande — essayez « mettre la vitesse de croisière à 100 ».",
+      confirmQ: (a)=>`Voulez-vous que je ${a} ?`,
+      yes: "C'est fait — j'applique ça maintenant.",
+      no: "D'accord, aucun changement effectué.",
+      noPending: "Il n'y a aucune commande en attente de confirmation.",
+      actions: {
+        close_window:"ferme la fenêtre", open_window:"ouvre la fenêtre",
+        set_speed_limit:(v)=>`règle la limite de vitesse à ${v} km/h`, set_cruise_speed:(v)=>`règle la vitesse de croisière à ${v} km/h`,
+        enable_eco_mode:"active le mode éco", increase_safety_distance:"augmente la distance de sécurité",
+        decrease_safety_distance:"réduise la distance de sécurité", decrease_speed:"ralentisse de 10 km/h",
+        increase_speed:"accélère de 10 km/h",
+      },
+    },
+    de: {
+      greet: { professional:"Guten Tag. Wie kann ich helfen?", friendly:"Hallo! Was kann ich für dich tun?", sport:"Hey! Bereit, wenn du es bist — was geht?", zen:"Hallo. Lassen Sie sich Zeit — wie kann ich helfen?" },
+      whoami: { professional:"Ich bin Ihr Bordassistent für die Fahrt.", friendly:"Ich bin der kleine Co-Pilot deines Autos!", sport:"Dein Bord-Co-Pilot, startklar!", zen:"Ich bin Ihr ruhiger Begleiter auf dieser Fahrt." },
+      unknown: "Das habe ich nicht als Befehl erkannt — versuchen Sie „Geschwindigkeit auf 100 setzen“.",
+      confirmQ: (a)=>`Soll ich ${a}?`,
+      yes: "Erledigt — wird jetzt angewendet.",
+      no: "Okay, keine Änderung vorgenommen.",
+      noPending: "Es gibt keinen ausstehenden Befehl zu bestätigen.",
+      actions: {
+        close_window:"das Fenster schließen", open_window:"das Fenster öffnen",
+        set_speed_limit:(v)=>`das Tempolimit auf ${v} km/h setzen`, set_cruise_speed:(v)=>`die Geschwindigkeit auf ${v} km/h setzen`,
+        enable_eco_mode:"den Eco-Modus aktivieren", increase_safety_distance:"den Sicherheitsabstand erhöhen",
+        decrease_safety_distance:"den Sicherheitsabstand verringern", decrease_speed:"um 10 km/h verlangsamen",
+        increase_speed:"um 10 km/h beschleunigen",
+      },
+    },
+  };
+
+  function detectLangHint(text){
+    const t = text.toLowerCase();
+    if (/[àâçéèêëîïôûùü]|ferme|ouvre|vitesse|active|règle|réduis|accélère/.test(t)) return 'fr';
+    if (/schließ|öffne|geschwindigkeit|aktivier|erhöh|verringer|beschleunig/.test(t)) return 'de';
+    return 'en';
+  }
+
+  function extractNumber(t){ const m = t.match(/(\d{2,3})/); return m ? parseInt(m[1],10) : null; }
+
+  function parseIntent(text){
+    const t = text.toLowerCase();
+    const num = extractNumber(t);
+    const has = (...words)=> words.some(w=>t.includes(w));
+
+    if (has('close window','ferme la fenêtre','fenster schließ')) return {action:'close_window'};
+    if (has('open window','ouvre la fenêtre','fenster öffn')) return {action:'open_window'};
+    if (has('eco','éco','öko')) return {action:'enable_eco_mode'};
+    if (has('speed limit','limite de vitesse','tempolimit') && num) return {action:'set_speed_limit', value:num};
+    if (has('cruise speed','vitesse de croisière','geschwindigkeit auf') && num) return {action:'set_cruise_speed', value:num};
+    if (has('increase safety','augmente la distance','sicherheitsabstand erhöh')) return {action:'increase_safety_distance'};
+    if (has('decrease safety','réduis la distance','sicherheitsabstand verringer')) return {action:'decrease_safety_distance'};
+    if (has('speed up','accélère','beschleunig')) return {action:'increase_speed'};
+    if (has('slow down','ralentis','verlangsam')) return {action:'decrease_speed'};
+    if (num && has('set speed','vitesse','geschwindigkeit')) return {action:'set_cruise_speed', value:num};
+
+    if (has('hi','hello','bonjour','salut','hallo')) return {smalltalk:'greet'};
+    if (has('who are you','what do you do','qui es-tu','wer bist du','was machst du')) return {smalltalk:'whoami'};
+    return null;
+  }
+
+  function dispatchCommand(action, value){
+    const s = vehicleState;
+    if (action === 'set_speed_limit' && value != null) s.speed_limit_kmh = value;
+    else if (action === 'set_cruise_speed' && value != null) s.cruise_speed_kmh = value;
+    else if (action === 'enable_eco_mode') s.eco_mode = true;
+    else if (action === 'increase_safety_distance') s.safety_distance_level = Math.min(5, s.safety_distance_level + 1);
+    else if (action === 'decrease_safety_distance') s.safety_distance_level = Math.max(1, s.safety_distance_level - 1);
+    else if (action === 'decrease_speed') s.cruise_speed_kmh = Math.max(0, s.cruise_speed_kmh - 10);
+    else if (action === 'increase_speed') s.cruise_speed_kmh += 10;
+    else if (action === 'close_window') s.window_open = false;
+    else if (action === 'open_window') s.window_open = true;
+    renderDashboard();
+  }
+
+  function respondTo(userText){
+    const lang = detectLangHint(userText);
+    currentLang = lang;
+    renderLangRow();
+    const dict = T[lang];
+    const intent = parseIntent(userText);
+
+    if (!intent){
+      return { spokenText: dict.unknown, needsConfirmation:false };
+    }
+    if (intent.smalltalk){
+      const bank = dict[intent.smalltalk];
+      return { spokenText: bank[currentPersonality] || bank.professional, needsConfirmation:false };
+    }
+    const phrase = dict.actions[intent.action];
+    const actionText = typeof phrase === 'function' ? phrase(intent.value) : phrase;
+    pendingCommand = { action: intent.action, value: intent.value, lang };
+    return { spokenText: dict.confirmQ(actionText), needsConfirmation:true };
+  }
+
+  function respondConfirm(confirmationText){
+    const t = confirmationText.toLowerCase();
+    const dict = T[pendingCommand ? pendingCommand.lang : currentLang];
+    if (!pendingCommand) return { spokenReply: dict.noPending, confirmed:false };
+    const yes = /^(yes|yeah|yup|ok|oui|ouais|d'accord|ja|jawohl)\b/.test(t) || /\b(yes|oui|ja)\b/.test(t);
+    const no = /^(no|nope|non|nein)\b/.test(t) || /\b(no|non|nein)\b/.test(t);
+    const confirmed = yes && !no;
+    if (confirmed) dispatchCommand(pendingCommand.action, pendingCommand.value);
+    const reply = confirmed ? dict.yes : dict.no;
+    pendingCommand = null;
+    return { spokenReply: reply, confirmed };
+  }
+
+  /* ---- UI wiring ---- */
+  const personalityRow = document.getElementById('personalityRow');
+  Object.entries(PERSONALITIES).forEach(([key,p])=>{
+    const b = document.createElement('button');
+    b.className = 'btn btn-ghost btn-sm' + (key===currentPersonality ? ' active' : '');
+    b.textContent = p.label;
+    b.addEventListener('click', ()=>{
+      currentPersonality = key;
+      personalityRow.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    });
+    personalityRow.appendChild(b);
+  });
+
+  const micLangRow = document.getElementById('micLangRow');
+  function renderLangRow(){
+    micLangRow.innerHTML = '';
+    Object.entries(LANGS).forEach(([code,label])=>{
+      const b = document.createElement('button');
+      b.className = 'btn btn-ghost btn-sm' + (code===currentLang ? ' active' : '');
+      b.textContent = label;
+      b.addEventListener('click', ()=>{ currentLang = code; renderLangRow(); });
+      micLangRow.appendChild(b);
+    });
+  }
+  renderLangRow();
+
+  const scenarios = ['Set cruise speed to 100', 'Ferme la fenêtre', 'Aktiviere den Eco-Modus', 'What do you do?', 'Increase the safety distance'];
+  const scenarioRow = document.getElementById('scenarioRow');
+  scenarios.forEach(s=>{
+    const b = document.createElement('button');
+    b.className = 'btn btn-ghost btn-sm';
+    b.textContent = s;
+    b.addEventListener('click', ()=>{ chatInput.value = s; sendMessage(); });
+    scenarioRow.appendChild(b);
+  });
+
+  const chatWindow = document.getElementById('chatWindow');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const confirmBanner = document.getElementById('confirmBanner');
+  const micBtn = document.getElementById('micBtn');
+  const micHint = document.getElementById('micHint');
+
+  function addMsg(text, cls){
+    const d = document.createElement('div');
+    d.className = 'msg ' + cls;
+    d.textContent = text;
+    chatWindow.appendChild(d);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  let ttsEnabled = true;
+  function speak(text){
+    if (!ttsEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = currentLang === 'fr' ? 'fr-FR' : currentLang === 'de' ? 'de-DE' : 'en-US';
+    micBtn.classList.add('speaking');
+    u.onend = ()=> micBtn.classList.remove('speaking');
+    window.speechSynthesis.speak(u);
+  }
+
+  function renderConfirmBanner(){
+    if (!pendingCommand){ confirmBanner.style.display = 'none'; return; }
+    confirmBanner.style.display = 'flex';
+    confirmBanner.innerHTML = `<span>Waiting for confirmation…</span>`;
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const yes = document.createElement('button'); yes.className='btn btn-primary btn-sm'; yes.textContent='Yes';
+    const no = document.createElement('button'); no.className='btn btn-ghost btn-sm'; no.textContent='No';
+    yes.addEventListener('click', ()=>runTurn('yes'));
+    no.addEventListener('click', ()=>runTurn('no'));
+    actions.appendChild(yes); actions.appendChild(no);
+    confirmBanner.appendChild(actions);
+  }
+
+  function runTurn(text){
+    addMsg(text, 'user');
+    if (pendingCommand){
+      const { spokenReply } = respondConfirm(text);
+      addMsg(spokenReply, 'assistant');
+      speak(spokenReply);
+    } else {
+      const { spokenText } = respondTo(text);
+      addMsg(spokenText, 'assistant');
+      speak(spokenText);
+    }
+    renderConfirmBanner();
+  }
+
+  function sendMessage(){
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    runTurn(text);
+  }
+  sendBtn.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', e=>{ if (e.key==='Enter') sendMessage(); });
+
+  addMsg('Press the mic, or try one of the sample commands below.', 'system');
+
+  /* ---- dashboard ---- */
+  function renderDashboard(){
+    const s = vehicleState;
+    const pct = Math.min(100, Math.round((s.cruise_speed_kmh/160)*100));
+    document.getElementById('gauge').style.setProperty('--pct', pct);
+    document.getElementById('g-speed').textContent = s.cruise_speed_kmh;
+    document.getElementById('v-limit').textContent = s.speed_limit_kmh != null ? s.speed_limit_kmh + ' km/h' : '—';
+    document.getElementById('v-eco').innerHTML = `<span class="toggle-dot ${s.eco_mode?'on':'off'}"></span>${s.eco_mode?'on':'off'}`;
+    document.getElementById('v-window').innerHTML = `<span class="toggle-dot ${s.window_open?'on':'off'}"></span>${s.window_open?'open':'closed'}`;
+    const bar = document.getElementById('v-safety');
+    bar.innerHTML = '';
+    for (let i=1;i<=5;i++){ const sp = document.createElement('span'); if (i <= s.safety_distance_level) sp.classList.add('on'); bar.appendChild(sp); }
+  }
+  renderDashboard();
+
+  const ttsToggle = document.getElementById('ttsToggle');
+  ttsToggle.addEventListener('click', ()=>{
+    ttsEnabled = !ttsEnabled;
+    ttsToggle.textContent = ttsEnabled ? '🔊 on' : '🔈 off';
+  });
+
+  /* ---- mic (Web Speech API — real STT, real TTS) ---- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR){
+    const recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    let listening = false;
+    micBtn.addEventListener('click', ()=>{
+      if (listening) { recognition.stop(); return; }
+      recognition.lang = currentLang === 'fr' ? 'fr-FR' : currentLang === 'de' ? 'de-DE' : 'en-US';
+      try{ recognition.start(); }catch(e){}
+    });
+    recognition.onstart = ()=>{ listening = true; micBtn.classList.add('listening'); micHint.textContent = 'Listening…'; };
+    recognition.onend = ()=>{ listening = false; micBtn.classList.remove('listening'); micHint.textContent = 'Press the mic and speak a command — in the language selected below.'; };
+    recognition.onresult = (e)=>{ const transcript = e.results[0][0].transcript; runTurn(transcript); };
+    recognition.onerror = ()=>{ listening = false; micBtn.classList.remove('listening'); micHint.textContent = "Didn't catch that — try again."; };
+  } else {
+    micBtn.disabled = true;
+    micHint.textContent = 'Speech recognition not supported in this browser — try Chrome, or type below.';
+  }
+
+})();
+</script>
+</body>
+</html>
