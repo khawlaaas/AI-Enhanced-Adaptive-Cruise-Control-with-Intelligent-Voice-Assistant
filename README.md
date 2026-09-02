@@ -100,4 +100,4 @@ The project involved several stages of development:
 ---
 
 ## 👥 Authors
-Developed as part of a Stage/Project at IAGI.
+Khawla EL HAMDI.
