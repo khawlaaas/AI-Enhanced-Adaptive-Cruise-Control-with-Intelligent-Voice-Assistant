@@ -32,7 +32,7 @@ LOCAL_MODEL_PATH = "oldroad_classifier.keras"
 ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-# --- Roboflow off-road model ---
+# --- Roboflow off-road model
 OFFROAD_WORKSPACE = "sri-lab"
 OFFROAD_PROJECT = "road-surface-classification-lgxl1"
 OFFROAD_VERSION = 1
