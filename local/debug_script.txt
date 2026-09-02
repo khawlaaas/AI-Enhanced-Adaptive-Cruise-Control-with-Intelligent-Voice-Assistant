@@ -29,8 +29,8 @@ CLASS_NAMES = ["autoroute", "urbaine", "rurale"]  # must match the order used du
 
 LOCAL_MODEL_PATH = "road_classifier.keras"
 
-ROBOFLOW_API_KEY = "M7b9N8fKVdRTuOBDC6TH"
-ELEVENLABS_API_KEY = "sk_889cfbac51f979d6c8ea2f81c0a0eb4e8846c80b504e1dd9"
+ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
 # --- Roboflow off-road model ---
 OFFROAD_WORKSPACE = "sri-lab"
