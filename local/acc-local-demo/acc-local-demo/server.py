@@ -1,7 +1,4 @@
 """
-Local server for the ACC demo. Runs your actual pipeline (pipeline.py) and serves the
-frontend in static/. Everything stays on your laptop — no data leaves localhost.
-
 Run:
     pip install -r requirements.txt
     cp .env.example .env   # then fill in your API keys
