@@ -25,7 +25,7 @@ from tkinter import filedialog
 
 
 IMG_SIZE = (224, 224)
-CLASS_NAMES = ["autoroute", "urbaine", "rurale"]  # must match the order used during training
+CLASS_NAMES = ["autoroute", "urbaine", "rurale"]
 
 LOCAL_MODEL_PATH = "oldroad_classifier.keras"
 

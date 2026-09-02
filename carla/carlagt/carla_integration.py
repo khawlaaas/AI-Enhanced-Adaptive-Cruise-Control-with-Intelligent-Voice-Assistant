@@ -1,43 +1,4 @@
-"""
-CARLA integration for the ACC pipeline.
 
-Drop this file next to your notebook and `from carla_integration import *`
-in a new cell after your existing model-loading cells (Roboflow/YOLO/etc.
-can stay loaded — you don't have to delete them, see notes at the bottom).
-
-WHAT THIS REPLACES
--------------------
-CARLA gives you simulation ground truth for most of what your CV models are
-currently inferring from pixels. That's both more accurate (real distances,
-not "box looks big") and much faster (no inference call at all).
-
-    your model                 -> CARLA ground-truth function here
-    -----------------------------------------------------------
-    detect_weather()            -> get_weather_label()
-    detect_offroad()             -> is_offroad()
-    traffic sign / speed limit  -> get_speed_limit_kmh(), get_traffic_light_state()
-    crosswalk-ahead part of
-      detect_pedestrian_crosswalk() -> get_crosswalk_ahead()
-    pedestrian-close/far part
-      of detect_pedestrian_crosswalk() -> get_nearest_pedestrian()
-    detect_car_too_close()      -> get_nearest_vehicle_ahead()
-
-WHAT THIS DOES NOT REPLACE
----------------------------
-- Road type (autoroute/urbaine/rurale): CARLA has no such tag out of the
-  box. get_road_type() below uses a per-town lookup table you fill in +
-  a lane-count/speed-limit fallback heuristic. Your trained road_classifier
-  keras model is still useful here if you'd rather run it on the live frame
-  instead of maintaining the table -- your call.
-- detect_damage() (road damage): default CARLA towns have pristine roads.
-  Only meaningful if you spawn custom damaged-road static props.
-- detect_speed_bump(): same caveat, only meaningful with custom map props.
-  Vanilla CARLA towns don't model speed bumps as a distinct semantic thing.
-
-Keep those three model calls in your pipeline only if you've set up custom
-scenarios for them; otherwise stub them to (False, 0.0) in sim runs and
-save the GPU cycles.
-"""
 
 import queue
 import numpy as np
