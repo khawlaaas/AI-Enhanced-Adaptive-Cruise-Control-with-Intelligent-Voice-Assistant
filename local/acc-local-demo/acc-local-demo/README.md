@@ -3,7 +3,7 @@
 This is not a simulation. `pipeline.py` is your notebook code (road classifier, Roboflow
 off-road/damage, YOLOv11 signs, your trained speed-bump and pedestrian/crosswalk YOLO models,
 TFLite weather, YOLOv8n vehicle distance, the speed-decision engine, and the Whisper → Groq
-Llama-3.3-70B → ElevenLabs voice assistant) wrapped behind a small local web server so a
+openai/gpt-oss-120b → ElevenLabs voice assistant) wrapped behind a small local web server so a
 browser UI can call it. Nothing about the model logic was changed.
 
 Everything runs on your laptop. The browser talks to `http://localhost:8000`, which is your
@@ -18,8 +18,7 @@ source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-You'll also need `ffmpeg` on your PATH (Whisper uses it to decode audio) and `git` (used once
-to auto-clone the traffic-sign repo).
+You'll also need `ffmpeg` on your PATH (Whisper uses it to decode audio; install via `brew install ffmpeg` on macOS, `sudo apt install ffmpeg` on Linux, or download from ffmpeg.org on Windows) and `git` (used once to auto-clone the traffic-sign repo).
 
 ## 2. Add your model files
 
@@ -62,7 +61,7 @@ capture on the voice tab).
   all your real models, and the actual `classify_full()` / `apply_overrides()` result comes
   back and renders live (confidence bars + the final speed decision).
 - **Voice Assistant** — press the mic, speak (any language). The recording goes to your
-  server, gets transcribed by your local Whisper model, sent to Groq/Llama-3.3-70B with your
+  server, gets transcribed by your local Whisper model, sent to Groq/openai/gpt-oss-120b with your
   real tool schema and propose→confirm flow, and the reply comes back as real ElevenLabs
   audio (your chosen voice, `JBFqnCBsd6RMkjVDRZzb`) and plays in the browser. Typing is a
   fallback if you'd rather not use the mic mid-demo.

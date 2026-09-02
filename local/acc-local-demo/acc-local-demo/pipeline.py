@@ -84,7 +84,7 @@ WEATHER_SPEED_REDUCTION = 0.20
 PEDESTRIAN_FAR_SPEED_REDUCTION = 0.30
 AUTOMATIC_REASON_CODES = {"pedestrian_stop", "stop_sign", "red_light"}
 
-LLM_MODEL = "llama-3.3-70b-versatile"
+LLM_MODEL = "openai/gpt-oss-120b"
 CONVERSATION_HISTORY_TURNS = 5
 
 PERSONALITY_TONE = {
@@ -493,7 +493,7 @@ def classify_full(image_path):
 
 
 # ============================================================
-# Voice assistant — Whisper (STT) + Groq/Llama-3.3-70B (NLU/tools) + ElevenLabs (TTS)
+# Voice assistant — Whisper (STT) + Groq/openai/gpt-oss-120b (NLU/tools) + ElevenLabs (TTS)
 # Server-side session state (single-driver local demo, same as the notebook's module globals).
 # ============================================================
 _pending_command = {"data": None, "question": None}
@@ -501,8 +501,10 @@ _conversation_history = []
 
 
 def transcribe_audio(audio_path):
-    result = get_whisper_model().transcribe(audio_path)
-    return result["text"].strip(), result["language"]
+    # whisper.load_model returns the model, but transcribe method is on the model
+    model = get_whisper_model()
+    result = model.transcribe(audio=audio_path)
+    return result.get("text", "").strip(), result.get("language", "en")
 
 
 def _append_history(user_text, assistant_text):
@@ -601,8 +603,8 @@ def confirm_pending_command(confirmation_text, vehicle_state):
         return vehicle_state, "There is no pending command to confirm.", False
 
     confirmed, spoken_reply = _judge_yes_no(confirmation_text, _pending_command["question"])
-    if confirmed:
-        vehicle_state = dispatch_command(pending["action"], pending["value"], vehicle_state)
+    if confirmed and pending is not None:
+        vehicle_state = dispatch_command(pending["action"], pending.get("value"), vehicle_state)
 
     _append_history(confirmation_text, spoken_reply)
     _pending_command["data"] = None

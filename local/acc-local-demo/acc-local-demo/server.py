@@ -19,7 +19,6 @@ import traceback
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import pipeline
@@ -84,6 +83,8 @@ def _audio_b64(text, language_code):
 @app.post("/api/voice/text")
 async def voice_text(text: str = Form(...), personality: str = Form("professional"), language: str = Form("en")):
     global vehicle_state
+    spoken_text = ""
+    needs_confirmation = False
     try:
         spoken_text, vehicle_state, needs_confirmation = pipeline.understand_and_respond(text, vehicle_state, personality)
     except pipeline.ModelNotReady as e:

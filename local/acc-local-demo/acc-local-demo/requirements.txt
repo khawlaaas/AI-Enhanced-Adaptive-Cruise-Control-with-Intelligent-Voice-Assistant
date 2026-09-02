@@ -1,3 +1,4 @@
+# System requirement: ffmpeg (must be installed on your OS for Whisper to work)
 fastapi
 uvicorn[standard]
 python-multipart

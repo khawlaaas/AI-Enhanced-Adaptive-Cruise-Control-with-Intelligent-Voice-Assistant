@@ -284,7 +284,7 @@
     <div class="flow-row">
       <div class="flow-node">Mic input</div><span class="flow-arrow">›</span>
       <div class="flow-node">Whisper STT (any language)</div><span class="flow-arrow">›</span>
-      <div class="flow-node">Llama-3.3-70B on Groq + tool call</div><span class="flow-arrow">›</span>
+      <div class="flow-node">openai/gpt-oss-120b on Groq + tool call</div><span class="flow-arrow">›</span>
       <div class="flow-node">Spoken confirmation question</div><span class="flow-arrow">›</span>
       <div class="flow-node">Driver says yes / no</div><span class="flow-arrow">›</span>
       <div class="flow-node">Dispatch to vehicle state</div><span class="flow-arrow">›</span>
@@ -299,7 +299,7 @@
       <span class="chip">YOLOv8n (COCO)</span>
       <span class="chip">TFLite</span>
       <span class="chip">Whisper</span>
-      <span class="chip">Groq · Llama-3.3-70B</span>
+      <span class="chip">Groq · openai/gpt-oss-120b</span>
       <span class="chip">ElevenLabs TTS</span>
       <span class="chip">FastAPI</span>
     </div>
@@ -313,7 +313,6 @@
         <div class="drop-zone" id="dropZone">
           <div class="ic">📷</div>
           <div class="t1">Drop a road image, or click to browse</div>
-          <div class="t2">JPG or PNG — sent to local server, run through the trained models</div>
           <input type="file" id="fileInput" accept="image/*">
         </div>
         <div class="preview-wrap" id="previewWrap" style="display:none; margin-top:16px;">
@@ -360,7 +359,7 @@
             <button class="btn btn-primary" id="sendBtn">Send</button>
           </div>
           <div class="scenario-row" id="scenarioRow"></div>
-          <p class="caption" style="margin-top:14px;">Whisper (STT) → Llama-3.3-70B on Groq (intent + tool calls) → ElevenLabs (TTS), on your local server.</p>
+          <p class="caption" style="margin-top:14px;">Whisper (STT) → openai/gpt-oss-120b on Groq (intent + tool calls) → ElevenLabs (TTS), on your local server.</p>
         </div>
       </div>
       <div>
@@ -427,16 +426,16 @@
 
   const AUTOMATIC_REASON_CODES = new Set(["pedestrian_stop","stop_sign","red_light"]);
   const REASON_TEXT = {
-    pedestrian_stop: "Pedestrian detected close ahead — immediate stop.",
-    stop_sign: "Stop sign detected — immediate stop.",
-    red_light: "Red light detected — immediate stop.",
-    crosswalk: "Crosswalk ahead — speed capped.",
-    speed_bump: "Speed bump ahead — speed capped.",
+    pedestrian_stop: "Pedestrian detected close ahead: immediate stop.",
+    stop_sign: "Stop sign detected: immediate stop.",
+    red_light: "Red light detected: immediate stop.",
+    crosswalk: "Crosswalk ahead: speed capped.",
+    speed_bump: "Speed bump ahead: speed capped.",
     speed_limit: "Posted speed limit applied.",
-    pedestrian_far: "Pedestrian spotted at a distance — easing off.",
-    safety_distance: "Vehicle ahead is close — easing off.",
-    weather: "Adverse weather — easing off.",
-    null: "Clear road — cruising at the road-type base speed."
+    pedestrian_far: "Pedestrian spotted at a distance: easing off.",
+    safety_distance: "Vehicle ahead is close: easing off.",
+    weather: "Adverse weather: easing off.",
+    null: "Clear road: cruising at the road-type base speed."
   };
 
   /* ---------------- Perception tab ---------------- */
@@ -664,6 +663,16 @@
     micHint.textContent = 'Press the mic and speak, Whisper auto-detects your language.';
     renderConfirmBanner();
   }
+
+  // Sync dashboard on load
+  async function syncState(){
+    try {
+      const resp = await fetch(API + '/api/vehicle-state');
+      const data = await resp.json();
+      if (resp.ok) updateDashboard(data);
+    } catch(e) { console.error('Failed to sync state', e); }
+  }
+  syncState();
 
 })();
 </script>

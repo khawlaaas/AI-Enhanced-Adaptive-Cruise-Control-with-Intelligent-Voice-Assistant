@@ -276,7 +276,7 @@
             <button class="btn btn-primary" id="sendBtn">Send</button>
           </div>
           <div class="scenario-row" id="scenarioRow"></div>
-          <p class="caption" style="margin-top:14px;">Runs fully offline — the same tool-calling / propose→confirm architecture used with Whisper + Llama-3.3-70B (Groq) + ElevenLabs in the notebook, kept local here so this works instantly for anyone you send it to.</p>
+          <p class="caption" style="margin-top:14px;">Runs fully offline — the same tool-calling / propose→confirm architecture used with Whisper + openai/gpt-oss-120b (Groq) + ElevenLabs in the notebook, kept local here so this works instantly for anyone you send it to.</p>
         </div>
       </div>
       <div>
@@ -589,7 +589,7 @@
   /* ============================================================
      VOICE ASSISTANT — offline multilingual intent engine
      Same propose→confirm architecture & tool schema as the notebook's
-     Whisper + Groq/Llama-3.3-70B pipeline, run locally so it never
+     Whisper + Groq/openai/gpt-oss-120b pipeline, run locally so it never
      depends on a network call or a hidden API key.
   ============================================================ */
   const PERSONALITIES = {
